@@ -193,17 +193,72 @@ if (isset($_GET['apicall'])) {
             }
 
             switch ($src) {
+                case 'signin':
+                    $Email = $_POST['Email'];
+                    $Password = $_POST['Password'];
+
+                    $stmt = $connection->prepare("SELECT u.Id,u.Names,R.title,d.DepartmentId 
+                        from $TableName u  
+                        INNER JOIN roles R on R.id = u.RoleId
+                        Left Join staffdepartment d on d.UserId = u.id 
+                        WHERE u.Email = ? and u.Password = ?");
+                    $stmt->bind_param("ss", $Email, $Password);
+                    $stmt->execute();
+                    $stmt->store_result();
+                    if ($stmt->num_rows == 0) {
+                        $response['error'] = true;
+                        $response['message'] = 'Account false';
+                        Response($response);
+                        $stmt->close();
+                    } else {
+                        $stmt->execute();
+                        $stmt->bind_result($Id, $Names, $title, $DepartmentId);
+                        $results = array();
+                        while ($stmt->fetch()) {
+                            $temp = array();
+                            $temp['Id'] = $Id;
+                            $temp['Names'] = $Names;
+                            $temp['Roletitle'] = $title;
+                            $temp['DepartmentId'] = $DepartmentId;
+                            array_push($results, $temp);
+                        }
+                        $response['error'] = false;
+                        $response['results'] = $results;
+                        Response($response);
+
+                        //set sessions
+                        setcookie("DepartmentId", $DepartmentId, time() + (86400 * 30), "/");
+                        setcookie("Role", $title, time() + (86400 * 30), "/");
+                        setcookie("UserName", $Names, time() + (86400 * 30), "/");
+                        setcookie("UserId", $Id, time() + (86400 * 30), "/");
+
+                        header("Location: ../index.php");
+                        $stmt->close();
+                    }
+                    break;
                 case "create":
                     $Names = $_POST['Names'];
                     $Email = $_POST['Email'];
                     $Password = $_POST['Password'];
                     $PhoneNumber = $_POST['PhoneNumber'];
                     $RoleId = $_POST['RoleId'];
+                    $DepartmentId = $_POST['DepartmentId'];
 
                     $stmt = $connection->prepare("INSERT INTO $TableName (Names,Email,Password,PhoneNumber,RoleId)
                                 VALUES (?,?,?,?,?)");
                     $stmt->bind_param("sssss", $Names, $Email, $Password, $PhoneNumber, $RoleId);
-                    getResponse($stmt);
+                    if (!$stmt->execute()) {
+                        $state = false;
+                        $response['error'] = true;
+                        $response['message'] = $connection->errno . ' ' . $connection->error;
+                    } else {
+                        $Id = $connection->insert_id;
+
+                        $stmt = $connection->prepare("INSERT INTO staffdepartment (UserId,DepartmentId)
+                        VALUES (?,?)");
+                        $stmt->bind_param("ss",  $Id, $DepartmentId);
+                        getResponse($stmt);
+                    }
                     header("Location: ../users.php");
                     break;
 
@@ -214,12 +269,20 @@ if (isset($_GET['apicall'])) {
                     $PhoneNumber = $_POST['PhoneNumber'];
                     $RoleId = $_POST['RoleId'];
                     $Id = $_GET['Id'];
+                    $DepartmentId = $_POST['DepartmentId'];
 
                     $stmt = $connection->prepare("UPDATE $TableName 
                                 SET Names = ?,Email = ?,Password = ?,PhoneNumber = ?,RoleId = ?
                                 WHERE Id = ?");
                     $stmt->bind_param("ssssss", $Names, $Email, $Password, $PhoneNumber, $RoleId, $Id);
                     getResponse($stmt);
+
+                    $stmt = $connection->prepare("UPDATE staffdepartment
+                                    SET UserId = ?,DepartmentId = ?
+                                    WHERE UserId = ?");
+                    $stmt->bind_param("sss",  $UserId, $DepartmentId, $UserId);
+                    getResponse($stmt);
+
                     header("Location: ../users.php");
                     break;
 
@@ -487,7 +550,10 @@ if (isset($_GET['apicall'])) {
                     break;
 
                 case 'getAll':
-                    $stmt = $connection->prepare("SELECT * from $TableName
+                    $Id = $_GET['Id'];
+                    $stmt = $connection->prepare("SELECT s.* from $TableName s
+                        INNER JOIN Departments d on d.id = s.departmentId
+                        where d.id = $Id
                         Order by Id DESC");
                     GetData($stmt, $connection);
                     break;
@@ -589,16 +655,18 @@ if (isset($_GET['apicall'])) {
                 $IdeaId = 'IdeaId';
                 $Likes = 'Likes';
                 $Dislikes = 'Dislikes';
+                $UserId = 'Dislikes';
                 $Id = null;
 
                 $stmt->execute();
-                $stmt->bind_result($Id, $IdeaId, $Likes, $Dislikes);
+                $stmt->bind_result($Id, $IdeaId, $Likes, $Dislikes, $UserId);
                 $results = array();
                 while ($stmt->fetch()) {
                     $temp = array();
                     $temp['Id'] = $Id;
                     $temp['IdeaId'] = $IdeaId;
                     $temp['Likes'] = $Likes;
+                    $temp['UserId'] = $UserId;
                     $temp['Dislikes'] = $Dislikes;
                     array_push($results, $temp);
                 }
@@ -613,10 +681,27 @@ if (isset($_GET['apicall'])) {
                     $IdeaId = $_POST['IdeaId'];
                     $Likes = $_POST['Likes'];
                     $Dislikes = $_POST['Dislikes'];
+                    $UserId  = $_POST['UserId'];
 
-                    $stmt = $connection->prepare("INSERT INTO $TableName (IdeaId,Likes,Dislikes)
-                                    VALUES (?,?,?)");
-                    $stmt->bind_param("sss", $IdeaId, $Likes, $Dislikes);
+                    $stmt = $connection->prepare("SELECT *
+                    from $TableName  
+                    WHERE IdeaId = ? and UserId = ?");
+                    $stmt->bind_param("ss", $IdeaId, $UserId);
+                    $stmt->execute();
+                    $stmt->store_result();
+                    if ($stmt->num_rows > 0) {
+                        $stmt->close();
+                        $stmt = $connection->prepare("DELETE
+                        from $TableName  
+                        WHERE IdeaId = ? and UserId = ?");
+                        $stmt->bind_param("ss", $IdeaId, $UserId);
+                        $stmt->execute();
+                    }
+                    $stmt->close();
+
+                    $stmt = $connection->prepare("INSERT INTO $TableName (IdeaId,Likes,Dislikes,UserId)
+                                    VALUES (?,?,?,?)");
+                    $stmt->bind_param("ssss", $IdeaId, $Likes, $Dislikes, $UserId);
                     getResponse($stmt);
                     break;
 
@@ -695,7 +780,7 @@ if (isset($_GET['apicall'])) {
 
             switch ($src) {
                 case "create":
-                    $SubjectId = $_POST['SubjectId'];
+                    $SubjectId = $_GET['SubjectId'];
                     $UploaderId = $_POST['UploaderId'];
                     $IdeaCategoryId = $_POST['IdeaCategoryId'];
                     $Header = $_POST['Header'];
@@ -704,14 +789,15 @@ if (isset($_GET['apicall'])) {
                     //uploading image 
                     $ImgName =  getFileName($TableName, 0, 'ImgPath');
 
-                    $stmt = $connection->prepare("INSERT INTO $TableName (Name,Description,Name,Description,Name,FilePath)
+                    $stmt = $connection->prepare("INSERT INTO $TableName (SubjectId,UploaderId,IdeaCategoryId,Header,Description,ImgPath)
                         VALUES (?,?,?,?,?,?)");
-                    $stmt->bind_param("ssssss",  $SubjectId, $UploaderId, $IdeaCategoryId, $Header, $Description, $FilePath);
+                    $stmt->bind_param("ssssss",  $SubjectId, $UploaderId, $IdeaCategoryId, $Header, $Description, $ImgName);
                     if (getResponse($stmt)) {
                         if ($ImgName != null) {
                             uploadFile($ImgName, 'ImgPath');
                         }
                     };
+                    header("Location: ../IdeasForum.php?Id=$SubjectId");
                     break;
 
                 case 'update':
@@ -739,6 +825,7 @@ if (isset($_GET['apicall'])) {
                             uploadFile($ImgName, 'ImgPath');
                         }
                     };
+                    header("Location: ../IdeasForum.php?Id=$IdeaCategoryId");
                     break;
 
                 case 'get':
@@ -749,10 +836,109 @@ if (isset($_GET['apicall'])) {
                     GetData($stmt, $connection);
                     break;
 
+                case 'getByDepartmentId':
+                    $Id = $_GET['Id'];
+                    $stmt = $connection->prepare("SELECT i.Id,i.Header,i.Description,i.ImgPath,u.Names,
+                    (SELECT SUM(likes) from ideastats where IdeaId = i.Id) as Likes,
+                    (SELECT SUM(Dislikes) from ideastats where IdeaId = i.Id) as Dislikes
+                    from  ideas i
+                    Left Join  ideastats iss on i.Id = iss.IdeaId
+                    Inner Join users u on u.id = i.UploaderId 
+                    INNER JOIN subjects s on s.id = i.SubjectId 
+                    Where s.DepartmentId = $Id
+                    group by i.Id 
+                    ");
+
+                    $stmt->execute();
+                    $stmt->bind_result($Id, $Header, $Description, $ImgPath, $Names, $Likes, $Dislikes);
+                    $results = array();
+                    while ($stmt->fetch()) {
+                        $temp = array();
+                        $temp['Id'] = $Id;
+                        $temp['Header'] = $Header;
+                        $temp['Description'] = $Description;
+                        $temp['Dislikes'] = $Dislikes;
+                        $temp['Names'] = $Names;
+                        $temp['Likes'] = $Likes;
+                        $temp['ImgPath'] = GET_IMG . $ImgPath;
+                        array_push($results, $temp);
+                    }
+                    $response['error'] = false;
+                    $response['results'] = $results;
+                    Response($response);
+                    break;
+
                 case 'getAll':
-                    $stmt = $connection->prepare("SELECT * from $TableName
-                        Order by Id DESC");
-                    GetData($stmt, $connection);
+                    $filter = $_GET['filter'];
+                    $subjectId = $_GET['subjectId'];
+                    $whereClause = "";
+
+                    if ($filter == "Date") {
+                        $whereClause = "ORDER BY i.id DESC";
+                    } else if ($filter == "Likes") {
+                        $whereClause = "ORDER BY Likes DESC";
+                    } else if ($filter == "Disliked") {
+                        $whereClause = "ORDER BY Dislikes DESC";
+                    }
+
+                    $stmt = $connection->prepare("SELECT i.Id,i.Header,i.Description,i.ImgPath,u.Names,
+                    (SELECT SUM(likes) from ideastats where IdeaId = i.Id) as Likes,
+                    (SELECT SUM(Dislikes) from ideastats where IdeaId = i.Id) as Dislikes
+                    from  ideas i
+                    Left Join  ideastats iss on i.Id = iss.IdeaId
+                    Inner Join users u on u.id = i.UploaderId 
+                    Where i.SubjectId = $subjectId
+                    group by i.Id
+                    $whereClause
+                    ");
+
+                    $stmt->execute();
+                    $stmt->bind_result($Id, $Header, $Description, $ImgPath, $Names, $Likes, $Dislikes);
+                    $results = array();
+                    while ($stmt->fetch()) {
+                        $temp = array();
+                        $temp['Id'] = $Id;
+                        $temp['Header'] = $Header;
+                        $temp['Description'] = $Description;
+                        $temp['Dislikes'] = $Dislikes;
+                        $temp['Names'] = $Names;
+                        $temp['Likes'] = $Likes;
+                        $temp['ImgPath'] = GET_IMG . $ImgPath;
+                        array_push($results, $temp);
+                    }
+                    $response['error'] = false;
+                    $response['results'] = $results;
+                    Response($response);
+                    break;
+
+                case 'getAll2':
+
+                    $stmt = $connection->prepare("SELECT i.Id,i.Header,i.Description,i.ImgPath,u.Names,
+                        (SELECT SUM(likes) from ideastats where IdeaId = i.Id) as Likes,
+                        (SELECT SUM(Dislikes) from ideastats where IdeaId = i.Id) as Dislikes
+                        from  ideas i
+                        Left Join  ideastats iss on i.Id = iss.IdeaId
+                        Inner Join users u on u.id = i.UploaderId  
+                        group by i.Id 
+                        ");
+
+                    $stmt->execute();
+                    $stmt->bind_result($Id, $Header, $Description, $ImgPath, $Names, $Likes, $Dislikes);
+                    $results = array();
+                    while ($stmt->fetch()) {
+                        $temp = array();
+                        $temp['Id'] = $Id;
+                        $temp['Header'] = $Header;
+                        $temp['Description'] = $Description;
+                        $temp['Dislikes'] = $Dislikes;
+                        $temp['Names'] = $Names;
+                        $temp['Likes'] = $Likes;
+                        $temp['ImgPath'] = GET_IMG . $ImgPath;
+                        array_push($results, $temp);
+                    }
+                    $response['error'] = false;
+                    $response['results'] = $results;
+                    Response($response);
                     break;
 
                 case 'delete':
@@ -765,8 +951,81 @@ if (isset($_GET['apicall'])) {
                     break;
             }
             break;
-            //end
 
+        case 'stats':
+
+            $src = $_GET['src'];
+
+            switch ($src) {
+                case 'cardStats':
+                    $stmt = $connection->prepare("SELECT 
+                    (Select COUNT(*) from users) as userCount,
+                    (Select COUNT(*) from departments) as departmentCount,
+                    (Select COUNT(*) from subjects) as subjectsCount,
+                    (Select COUNT(*) from ideas) as ideasCount
+                    ");
+
+                    $stmt->execute();
+                    $stmt->bind_result($userCount, $departmentCount, $subjectsCount, $ideasCount);
+                    $results = array();
+                    while ($stmt->fetch()) {
+                        $temp = array();
+                        $temp['userCount'] = $userCount;
+                        $temp['departmentCount'] = $departmentCount;
+                        $temp['subjectsCount'] = $subjectsCount;
+                        $temp['ideasCount'] = $ideasCount;
+                        array_push($results, $temp);
+                    }
+                    $response['error'] = false;
+                    $response['results'] = $results;
+                    Response($response);
+                    break;
+
+                case 'subjectStats':
+                    $stmt = $connection->prepare("SELECT COUNT(s.departmentId) as count,s.departmentId, d.title
+                    FROM subjects s
+                    INNER JOIN departments d on s.departmentId = d.Id
+                    group by s.departmentId
+                    ");
+
+                    $stmt->execute();
+                    $stmt->bind_result($Count, $departmentId, $title);
+                    $results = array();
+                    while ($stmt->fetch()) {
+                        $temp = array();
+                        $temp['Count'] = $Count;
+                        $temp['title'] = $title;
+                        array_push($results, $temp);
+                    }
+                    $response['error'] = false;
+                    $response['results'] = $results;
+                    Response($response);
+                    break;
+
+                case 'ideaPercentages':
+                    $stmt = $connection->prepare("SELECT (select COUNT(*) from ideas) as ideaCount, COUNT(i.id) as count, d.title
+                        FROM ideas i
+                        INNER JOIN subjects s on s.id = i.subjectId
+                        INNER JOIN departments d on s.departmentId = d.Id
+                        group by s.departmentId
+                        ");
+
+                    $stmt->execute();
+                    $stmt->bind_result($IdeaCount, $Count, $title);
+                    $results = array();
+                    while ($stmt->fetch()) {
+                        $percent = ($Count / $IdeaCount) * 100;
+                        $temp = array();
+                        $temp['percent'] = $percent;
+                        $temp['title'] = $title;
+                        array_push($results, $temp);
+                    }
+                    $response['error'] = false;
+                    $response['results'] = $results;
+                    Response($response);
+                    break;
+            }
+            break;
 
         case 'sample':
 

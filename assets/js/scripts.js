@@ -29,7 +29,6 @@ function sendRequest(formdata, url) {
 
     var requestOptions = {
         method: 'POST',
-        headers: myHeaders,
         body: formdata,
         redirect: 'follow'
     };
@@ -44,6 +43,7 @@ function sendRequest(formdata, url) {
 
 //post function
 function postRequest(url, form_data, reloadPage) {
+    var result;
     $.ajax({
         type: "post",
         url: `${ApiPath + url}`,
@@ -54,7 +54,9 @@ function postRequest(url, form_data, reloadPage) {
         success: function (html) {
             var jsonResult = JSON.parse(html);
             if (!jsonResult.error) {
-                window.location = reloadPage;
+                //console.log(jsonResult);
+                result = jsonResult;
+                //  window.location = reloadPage;
             } else {
                 alertify.error('Error while making request');
             };
@@ -63,6 +65,7 @@ function postRequest(url, form_data, reloadPage) {
             alertify.error('Unknown Error.\n' + x.responseText);
         }
     });
+    return result;
 }
 
 //get cookie
@@ -81,6 +84,23 @@ function getCookie(cname) {
     }
     return "1";
 }
+
+
+function getUrlParameter(sParam) {
+    var sPageURL = window.location.search.substring(1),
+        sURLVariables = sPageURL.split('&'),
+        sParameterName,
+        i;
+
+    for (i = 0; i < sURLVariables.length; i++) {
+        sParameterName = sURLVariables[i].split('=');
+
+        if (sParameterName[0] === sParam) {
+            return typeof sParameterName[1] === undefined ? true : decodeURIComponent(sParameterName[1]);
+        }
+    }
+    return false;
+};
 
 
 

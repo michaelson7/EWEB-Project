@@ -93,6 +93,8 @@ require_once("includes/init.php");
                         <input type="text" class="form-control" name="PhoneNumber" required>
                         <label>Role</label>
                         <select name="RoleId" id="RoleId" class="form-control"></select>
+                        <label>Department</label>
+                        <select name="DepartmentId" id="DepartmentId" class="form-control"></select>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -146,6 +148,16 @@ require_once("includes/init.php");
                 }));
             }
         });
+        url = "departments&src=getAll";
+        sendRequest(form_data, url).then(response => {
+            for (i in response.results) {
+                $('#DepartmentId').append($('<option>', {
+                    value: response.results[i].Id,
+                    text: response.results[i].Title,
+                }));
+            }
+        });
+
     }
 
 

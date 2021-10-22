@@ -55,11 +55,13 @@ require_once("includes/init.php");
     });
 
     function getData() {
-        url = "subjects&src=getAll";
+        var DepartmentId = getCookie("DepartmentId");
+
+        url = "subjects&src=getAll&Id=" + DepartmentId;
         sendRequest(form_data, url).then(response => {
             for (i in response.results) {
                 var dataList = response.results[i];
-                $(`<div class="col-md-4 rounded w-100 mt-2 mb-2">
+                $(`<div " class="col-md-4 rounded w-100 mt-2 mb-2 ">
                         <div class="card">
                             <div>
                                 <img height="400" class="w-100 rounded" src="${dataList.ImgPath}" alt="">
@@ -71,7 +73,7 @@ require_once("includes/init.php");
                                 </p>
                                 <div class=" d-flex justify-content-between align-items-center">
                                     <a href="ideasForum.php?Id=${dataList.Id}" class="btn btn-outline-info rounded">Read More</a>
-                                    <p><i class="icofont-chat text-muted"> </i> 25</p>
+                                    <p><i class="icofont-chat text-muted"> </i> </p>
                                 </div>
                             </div>
                         </div>

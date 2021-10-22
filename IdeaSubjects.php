@@ -53,7 +53,7 @@ require_once("includes/init.php");
                                                 <th>Action</th>
                                             </tr>
                                         </thead>
-                                        <tbody id="tableData" class="text-center"></tbody>
+                                        <tbody id="tableData" class=""></tbody>
                                     </table>
                                 </div>
                             </div>
@@ -121,7 +121,8 @@ require_once("includes/init.php");
     });
 
     function getData() {
-        url = "subjects&src=getAll";
+        var DepartmentId = getCookie("DepartmentId");
+        url = "subjects&src=getAll&Id=" + DepartmentId;
         sendRequest(form_data, url).then(response => {
             for (i in response.results) {
                 $('#dataTable').DataTable().row.add([
@@ -149,7 +150,7 @@ require_once("includes/init.php");
             for (i in response.results) {
                 $('#DepartmentId').append($('<option>', {
                     value: response.results[i].Id,
-                    text: response.results[i].Title,
+                    text: response.results[i].Title + ' ' + response.results[i].Id,
                 }));
             }
         });

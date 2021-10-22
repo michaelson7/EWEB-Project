@@ -22,7 +22,7 @@ require_once("includes/init.php");
         <div id="layoutSidenav_content">
             <main>
                 <div class="container-fluid">
-                    <h4 class="mt-4">University Dashboard</h4>
+                    <h4 class="mt-4"> Dashboard</h4>
                     <ol class="breadcrumb mb-4">
                         <li class="breadcrumb-item active">Dashboard</li>
                     </ol>
@@ -41,28 +41,30 @@ require_once("includes/init.php");
                         <div class="col-xl-3 col-md-6">
                             <div class="card bg-warning text-white mb-4">
                                 <div class="card-body">
-                                    <h4>Events</h4>
-                                    <span id="eventNum"><br>
+                                    <h4>Departments</h4>
+                                    <span id="departmentNum"><br>
                                 </div>
                             </div>
                         </div>
                         <div class="col-xl-3 col-md-6">
                             <div class="card bg-success text-white mb-4">
                                 <div class="card-body">
-                                    <h4>Resources</h4>
-                                    <span id="resourceNum"><br>
+                                    <h4>Subjects</h4>
+                                    <span id="subjectNum"><br>
                                 </div>
                             </div>
                         </div>
                         <div class="col-xl-3 col-md-6">
                             <div class="card bg-danger text-white mb-4">
                                 <div class="card-body">
-                                    <h4>Faculties</h4>
-                                    <span id="facultyNum"><br>
+                                    <h4>Ideas</h4>
+                                    <span id="ideaNum"><br>
                                 </div>
                             </div>
                         </div>
                     </div>
+
+
 
                     <!-- charts -->
                     <div class="row">
@@ -71,7 +73,7 @@ require_once("includes/init.php");
                             <div class="card mb-4">
                                 <div class="card-header">
                                     <i class="fas fa-chart-area mr-1"></i>
-                                    User Growth
+                                    Posts Per Subject
                                 </div>
                                 <div class="card-body"><canvas id="growthChart" width="100%" height="40"></canvas></div>
                             </div>
@@ -82,48 +84,14 @@ require_once("includes/init.php");
                             <div class="card mb-4">
                                 <div class="card-header">
                                     <i class="fas fa-chart-bar mr-1"></i>
-                                    Popular Resource
+                                    Percentage Per Department
                                 </div>
                                 <div class="card-body"><canvas id="resourceChart" width="100%" height="40"></canvas></div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- database table -->
-                    <div class="card mb-4">
-                        <div class="card-header">
-                            <i class="fas fa-table mr-1"></i>
-                            Current Resources
-                        </div>
-                        <div class="card-body">
-                            <div class="table-responsive">
-                                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
-                                    <thead>
-                                        <tr>
-                                            <th>ID</th>
-                                            <th>Title</th>
-                                            <th>Description</th>
-                                            <th>Pdf File</th>
-                                            <th>Unloader</th>
-                                        </tr>
-                                    </thead>
 
-                                    <tfoot>
-                                        <tr>
-                                            <th>ID</th>
-                                            <th>Title</th>
-                                            <th>Description</th>
-                                            <th>Pdf File</th>
-                                            <th>Unloader</th>
-                                        </tr>
-                                    </tfoot>
-                                    <tbody id="tableData">
-
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
 
                 </div>
             </main>
@@ -139,96 +107,107 @@ require_once("includes/init.php");
 
 <script src="assets/js/scripts.js"></script>
 <script>
-    //sorting tables by id
-    $('#dataTable').DataTable({
-        "order": [
-            [0, "desc"]
-        ]
-    });
-
+    var url;
+    var formId;
+    var form_data = new FormData();
     //set up chart
-    Chart.defaults.global.defaultFontColor = 'white';
-    var ctx = document.getElementById('growthChart').getContext('2d');
-    var rChart = document.getElementById('resourceChart').getContext('2d');
 
-    var myChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: ['10 jan', '20 jan', '15 feb', '20 feb', '12 march'],
-            datasets: [{
-                label: '# of New Users',
-                data: [18, 23, 5, 34, 27],
-                backgroundColor: ['#2c80a754'],
-                borderColor: [
-                    'rgba(255, 99, 132, 1)',
-                    'rgba(54, 162, 235, 1)',
-                    'rgba(255, 206, 86, 1)',
-                    'rgba(75, 192, 192, 1)',
-                    'rgba(153, 102, 255, 1)'
-                ],
-                borderWidth: 1
-            }]
-        },
-        options: {
-            scales: {
-                yAxes: [{
-                    ticks: {
-                        beginAtZero: true
-                    }
-                }]
-            }
-        }
+    $(document).ready(function() {
+        getChartData();
+        getData();
     });
 
-    var myChart = new Chart(rChart, {
-        type: 'pie',
-        data: {
-            labels: ['Economics', 'Art', 'Law', 'ICT', 'ECommerce'],
-            datasets: [{
-                data: [23, 12, 4, 33, 11],
-                backgroundColor: [
-                    '#3d5c7a',
-                    '#5da72c',
-                    '#a75d2c',
-                    '#9d2ca7',
-                    '#a72c4b',
-                ],
-                borderColor: [
-                    'rgba(255, 99, 132, 1)',
-                    'rgba(54, 162, 235, 1)',
-                    'rgba(255, 206, 86, 1)',
-                    'rgba(75, 192, 192, 1)',
-                    'rgba(153, 102, 255, 1)'
-                ],
-                borderWidth: 1
-            }]
-        },
-        options: {}
-    });
-
-    //get stats
-    function getStatResult(url, formId, form_data) {
-        var x = 0;
+    function getData() {
+        url = "stats&src=cardStats";
         sendRequest(form_data, url).then(response => {
             for (i in response.results) {
-                x += 1;
+                var date = response.results[i];
+                $('#userNum').html(date.userCount);
+                $('#departmentNum').html(date.departmentCount);
+                $('#subjectNum').html(date.subjectsCount);
+                $('#ideaNum').html(date.ideasCount);
             }
-            document.getElementById(`${formId}`).innerHTML = x;
         });
+
+        getChartData();
     }
 
-    //get Resource data
-    function getResourceTbl(url, formId, form_data) {
+    function getChartData() {
+        Chart.defaults.global.defaultFontColor = 'white';
+        var ctx = document.getElementById('growthChart').getContext('2d');
+        var rChart = document.getElementById('resourceChart').getContext('2d');
+
+        var department = [];
+        var value = [];
+
+        url = "stats&src=subjectStats";
         sendRequest(form_data, url).then(response => {
+            console.log(response.results);
             for (i in response.results) {
-                $('#dataTable').DataTable().row.add([
-                    response.results[i].Id,
-                    response.results[i].Name,
-                    response.results[i].Description,
-                    `<a href=" ${response.results[i].PdfPath}" target="_blank">Read File</a> `,
-                    response.results[i].UserName,
-                ]).draw();
+                var data = response.results[i];
+                department.push(data.title);
+                value.push(data.Count);
             }
+        });
+
+        var myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: department,
+                datasets: [{
+                    label: 'posts per department',
+                    data: value,
+                    backgroundColor: ['#2c80a754'],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    yAxes: [{
+                        ticks: {
+                            beginAtZero: true
+                        }
+                    }]
+                }
+            }
+        });
+
+        var department2 = [];
+        var value2 = [];
+        url = "stats&src=ideaPercentages";
+        sendRequest(form_data, url).then(response => {
+            console.log(response.results);
+            for (i in response.results) {
+                var data2 = response.results[i];
+                department2.push(data2.title);
+                value2.push(data2.percent);
+            }
+        });
+
+        var myChart = new Chart(rChart, {
+            type: 'pie',
+            data: {
+                labels: department2,
+                datasets: [{
+                    data: value2,
+                    backgroundColor: [
+                        '#3d5c7a',
+                        '#5da72c',
+                        '#a75d2c',
+                        '#9d2ca7',
+                        '#a72c4b',
+                    ],
+                    borderColor: [
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(153, 102, 255, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {}
         });
     }
 </script>

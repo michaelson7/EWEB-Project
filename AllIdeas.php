@@ -30,11 +30,6 @@ require_once("includes/init.php");
                         </ol>
                     </div>
 
-
-                    <div>
-                        <button class="btn btn-primary w-100" data-toggle="modal" data-target=".ModelDialog">Add ideas</button>
-                    </div>
-
                     <div>
                         <div class="card mt-4 mb-4">
                             <div class="card-header">
@@ -48,10 +43,10 @@ require_once("includes/init.php");
                                             <tr>
                                                 <th>ID</th>
                                                 <th>Names</th>
-                                                <th>Email</th>
-                                                <th>PhoneNumber</th>
-                                                <th>RoleId</th>
-                                                <th>Action</th>
+                                                <th>Description</th>
+                                                <th>Likes</th>
+                                                <th>Dislikes</th>
+                                                <th>File</th>
                                             </tr>
                                         </thead>
                                         <tbody id="tableData"></tbody>
@@ -111,26 +106,26 @@ require_once("includes/init.php");
 
     $(document).ready(function() {
         getData();
-        getRoles();
+        //getRoles();
     });
 
     function getData() {
-        url = "ideas&src=getAll";
+        url = "ideas&src=getAll2";
         sendRequest(form_data, url).then(response => {
             for (i in response.results) {
-                $('#dataTable').DataTable().row.add([
+                $('#dataTable').DataTable({
+                    dom: 'Bfrtip',
+                    "bDestroy": true,
+                    buttons: [
+                        'copy', 'csv', 'excel', 'pdf', 'print'
+                    ]
+                }).row.add([
                     response.results[i].Id,
                     response.results[i].Names,
-                    response.results[i].Email,
-                    response.results[i].PhoneNumber,
-                    response.results[i].RoleId,
-                    `<div>
-                        <form id="formSubmit" action="" method="POST">
-                            <a onclick="editModel(${i},${response.results[i].Id})" class=" btn btn-primary m-1">Edit</a>
-                            <a onclick="return confirm('Are you sure you want to delete this?')" 
-                            href='API/API.php?apicall=ideas&src=delete&Id=${response.results[i].Id}' class="btn btn-danger m-1">Delete</a>
-                        </form>   
-                    </div>`,
+                    response.results[i].Description,
+                    response.results[i].Likes,
+                    response.results[i].Dislikes,
+                    ` <a href="http://${response.results[i].ImgPath}">${response.results[i].ImgPath}</a> `,
                 ]).draw();
             }
         });

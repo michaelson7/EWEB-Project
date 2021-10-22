@@ -21,14 +21,14 @@
                                     <h3 class="text-center font-weight-light my-4">Login</h3>
                                 </div>
                                 <div class="card-body">
-                                    <form>
+                                    <form method="post" action="API/API.php?apicall=users&src=signin">
                                         <div class="form-group">
                                             <label class="small mb-1" for="inputEmailAddress">Email</label>
-                                            <input name="email" class="form-control py-4" id="inputEmailAddress" type="email" placeholder="Enter email address" autocomplete="off" />
+                                            <input name="Email" class="form-control py-4" id="inputEmailAddress" type="email" placeholder="Enter email address" required />
                                         </div>
                                         <div class="form-group">
                                             <label class="small mb-1" for="inputPassword">Password</label>
-                                            <input name="password" class="form-control py-4" id="inputPassword" type="password" placeholder="Enter password" />
+                                            <input name="Password" class="form-control py-4" id="inputPassword" type="password" placeholder="Enter password" required />
                                         </div>
                                         <div class="form-group">
                                             <div class="custom-control custom-checkbox">
@@ -38,7 +38,7 @@
                                         </div>
                                         <div class="form-group d-flex align-items-center justify-content-between mt-4 mb-0">
                                             <a class="small" href="password.php">Forgot Password?</a>
-                                            <a class="btn btn-primary" onclick="login()">Login</a>
+                                            <button class="btn btn-primary" type="submit">Login</button>
                                         </div>
                                     </form>
                                 </div>
@@ -62,35 +62,4 @@
 <script src="assets/js/scripts.js"></script>
 
 <script>
-    function login() {
-        var form_data = new FormData();
-        var email = $('#inputEmailAddress').val();
-        var password = $('#inputPassword').val();
-
-        form_data.append("Email", email);
-        form_data.append("Password", password);
-
-        $.ajax({
-            type: "post",
-            url: `${ApiPath}account&src=AdminLogin`,
-            data: form_data,
-            contentType: false,
-            processData: false,
-            cache: false,
-            success: function(html) {
-                var jsonResult = JSON.parse(html);
-                if (!jsonResult.error) {
-                    alertify.success('Login Successful');
-                    document.cookie = `UserId=${jsonResult.results[0].Id}`;
-                    document.cookie = `UserName=${jsonResult.results[0].Names}`;
-                    window.location = "index.php";
-                } else {
-                    alertify.error('Please check Email and Password');
-                };
-            },
-            error: function(x, e) {
-                alertify.error('Unknown Error.\n' + x.responseText);
-            }
-        });
-    }
 </script>

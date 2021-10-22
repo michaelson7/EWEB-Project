@@ -11,7 +11,7 @@
                 </a>
 
                 <!-- meta data -->
-                <div>
+                <div id="adminBlock" class=" d-none">
                     <div class="sb-sidenav-menu-heading">Admin</div>
                     <a class="nav-link" href="AcademicYear.php">
                         <div class="sb-nav-link-icon">
@@ -25,12 +25,12 @@
                         </div>
                         Roles
                     </a>
-                    <a class="nav-link" href="Staff.php">
+                    <!-- <a class="nav-link" href="Staff.php">
                         <div class="sb-nav-link-icon">
                             <i class="icofont-calendar"></i>
                         </div>
                         Staff
-                    </a>
+                    </a> -->
                     <a class="nav-link" href="Users.php">
                         <div class="sb-nav-link-icon">
                             <i class="icofont-calendar"></i>
@@ -45,7 +45,7 @@
                     </a>
                 </div>
 
-                <div>
+                <div id="qamBlock" class=" d-none">
                     <div class="sb-sidenav-menu-heading">QAM</div>
                     <a class="nav-link" href="IdeaCategories.php">
                         <div class="sb-nav-link-icon">
@@ -67,7 +67,7 @@
                     </a>
                 </div>
 
-                <div>
+                <div id="qacBlock" class=" d-none">
                     <div class="sb-sidenav-menu-heading">QAC</div>
                     <a class="nav-link" href="DepartmentIdeas.php">
                         <div class="sb-nav-link-icon">
@@ -83,7 +83,7 @@
                     </a>
                 </div>
 
-                <div>
+                <div id="staffBlock" class=" d-none">
                     <div class="sb-sidenav-menu-heading">Staff</div>
                     <a class="nav-link" href="Ideas.php">
                         <div class="sb-nav-link-icon">
@@ -103,5 +103,16 @@
 </div>
 
 <script>
+    var role = getCookie("Role");
     document.getElementById(`UserName`).innerHTML = getCookie("UserName");;
+
+    if (role == "Admin") {
+        $('#adminBlock').removeClass('d-none');
+    } else if (role == "Quality+Assurance+Manager") {
+        $('#qamBlock').removeClass('d-none');
+    } else if (role == "Quality+Assurance+Coordinator") {
+        $('#qacBlock').removeClass('d-none');
+    } else if (role == "Staff") {
+        $('#staffBlock').removeClass('d-none');
+    }
 </script>
