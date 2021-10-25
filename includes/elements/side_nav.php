@@ -51,12 +51,6 @@
                         <div class="sb-nav-link-icon">
                             <i class="icofont-school-bag"></i>
                         </div>
-                        System Statistics
-                    </a>
-                    <a class="nav-link" href="IdeaCategories.php">
-                        <div class="sb-nav-link-icon">
-                            <i class="icofont-school-bag"></i>
-                        </div>
                         Idea Categories
                     </a>
                     <a class="nav-link" href="AllIdeas.php">
