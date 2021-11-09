@@ -209,6 +209,7 @@ if (isset($_GET['apicall'])) {
                         $response['error'] = true;
                         $response['message'] = 'Account false';
                         Response($response);
+                         header("Location: ../login.php?error=true");
                         $stmt->close();
                     } else {
                         $stmt->execute();
