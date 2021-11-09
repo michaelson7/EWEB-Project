@@ -19,6 +19,13 @@
                             <div class="card shadow-lg border-0 rounded-lg mt-5">
                                 <div class="card-header">
                                     <h3 class="text-center font-weight-light my-4">Login</h3>
+                                       <?php
+                                    if (isset($_GET['error'])) {
+                                    ?>
+                                        <p class="text-center text-danger">Account not found</p>
+                                    <?php
+                                    }
+                                    ?>
                                 </div>
                                 <div class="card-body">
                                     <form method="post" action="API/API.php?apicall=users&src=signin">
